@@ -369,7 +369,6 @@ namespace CPP {
             virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
                 IteratorMatcher::MatchData match = rule->match(iterator, doAction);
                 if (match) {
-                    match.matches++;
                     while (true) {
                         IteratorMatcher::MatchData tmp = rule->match(iterator, doAction);
                         if (!tmp) break;
@@ -377,11 +376,10 @@ namespace CPP {
                         match.matches += tmp.matches;
                     }
                     if (doAction) action(Input(iterator, match, match.matches));
-                    return true;
+                    return match;
                 }
 
-                iterator.popIterator(match.matches);
-                return false;
+                return match;
             }
         };
 
@@ -397,14 +395,19 @@ namespace CPP {
             using Rule::match;
 
             virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
+                IteratorMatcher::MatchData match;
+                match.begin = iterator.current();
+                match.end = iterator.current();
+                match.matched = false;
                 for (Rule & rule : rules) {
-                    IteratorMatcher::MatchData match = rule.match(iterator, doAction);
-                    if (match) {
+                    IteratorMatcher::MatchData tmp = rule.match(iterator, doAction);
+                    if (tmp) {
+                        match = tmp;
                         if (doAction) action(Input(iterator, match, match.matches));
                         return match;
                     }
                 }
-                return false;
+                return match;
             }
         };
 
@@ -421,16 +424,15 @@ namespace CPP {
 
             virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
                 IteratorMatcher::MatchData match;
-                bool first = true;
+                match.begin = iterator.current();
+                match.end = iterator.current();
+                match.matched = true;
                 for (Rule & rule : rules) {
                     IteratorMatcher::MatchData tmp = rule.match(iterator, doAction);
                     if (!tmp) {
+                        match.matched = false;
                         iterator.popIterator(match.matches);
-                        return false;
-                    }
-                    if (first) {
-                        first = false;
-                        match = tmp;
+                        return match;
                     }
                     match.end = tmp.end;
                     match.matches += tmp.matches;
@@ -455,7 +457,7 @@ namespace CPP {
                     IteratorMatcher::MatchData tmp = rule->match(iterator, doAction);
                     if (tmp) {
                         match.end = tmp.end;
-                        match.matches += tmp.matches;
+                        match.matches = tmp.matches;
                         if (doAction) action(Input(iterator, match, match.matches));
                         return match;
                     } else {
@@ -463,7 +465,8 @@ namespace CPP {
                     }
                 }
                 iterator.setCurrent(match.begin);
-                return false;
+                match = false;
+                return match;
             }
         };
 
@@ -555,9 +558,6 @@ namespace CPP {
                     return match;
                 }
                 match.matched = false;
-                match.end = tmp.end;
-                match.matches = tmp.matches;
-                iterator.popIterator();
                 return match;
             }
         };
