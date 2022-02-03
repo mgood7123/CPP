@@ -1,3 +1,6 @@
+#ifndef CPP_CPP_PREPROCESSOR_DATA_H
+#define CPP_CPP_PREPROCESSOR_DATA_H
+
 #include <deque>
 #include <unordered_map>
 #include <vector>
@@ -83,3 +86,5 @@ namespace CPP {
         std::deque<std::string> do_not_expand;
     };
 }
+
+#endif

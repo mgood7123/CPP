@@ -1,12 +1,60 @@
+#ifndef CPP_RULES_H
+#define CPP_RULES_H
+
 #include <functional>
 #include <string>
 #include <vector>
 #include "IteratorMatcher.h"
 #include <XLog/XLog.h>
 
+#define CPP_Rules_LogCapture1(rule, custom_name) new CPP::Rules::LogCapture(rule, custom_name)
+#define CPP_Rules_LogCapture(rule) CPP_Rules_LogCapture1(rule, #rule)
+#define Rules_NS_LogCapture1(rule, custom_name) new Rules::LogCapture(rule, custom_name)
+#define Rules_NS_LogCapture(rule) Rules_NS_LogCapture1(rule, #rule)
+
+#define CPP_Rules_LogCapture1_A(rule, custom_name, action) new CPP::Rules::LogCapture(rule, custom_name, action)
+#define CPP_Rules_LogCapture_A(rule, action) CPP_Rules_LogCapture1(rule, #rule, action)
+#define Rules_NS_LogCapture1_A(rule, custom_name, action) new Rules::LogCapture(rule, custom_name, action)
+#define Rules_NS_LogCapture_A(rule, action) Rules_NS_LogCapture1(rule, #rule, action)
+
+#define CPP_Rules_LogInput1(rule, custom_name) new CPP::Rules::LogInput(rule, custom_name)
+#define CPP_Rules_LogInput(rule) CPP_Rules_LogInput1(rule, #rule)
+#define Rules_NS_LogInput1(rule, custom_name) new Rules::LogInput(rule, custom_name)
+#define Rules_NS_LogInput(rule) Rules_NS_LogInput1(rule, #rule)
+
+#define CPP_Rules_LogInput1_A(rule, custom_name, action) new CPP::Rules::LogInput(rule, custom_name, action)
+#define CPP_Rules_LogInput_A(rule, action) CPP_Rules_LogInput1_A(rule, #rule, action)
+#define Rules_NS_LogInput1_A(rule, custom_name, action) new Rules::LogInput(rule, custom_name, action)
+#define Rules_NS_LogInput_A(rule, action) Rules_NS_LogInput1_A(rule, #rule, action)
+
+
+
+#define CPP_Rules_LogCapture1_NO_ALLOC(rule, custom_name) CPP::Rules::LogCapture(rule, custom_name)
+#define CPP_Rules_LogCapture_NO_ALLOC(rule) CPP_Rules_LogCapture1_NO_ALLOC(rule, #rule)
+#define Rules_NS_LogCapture1_NO_ALLOC(rule, custom_name) Rules::LogCapture(rule, custom_name)
+#define Rules_NS_LogCapture_NO_ALLOC(rule) Rules_NS_LogCapture1_NO_ALLOC(rule, #rule)
+
+#define CPP_Rules_LogCapture1_A_NO_ALLOC(rule, custom_name, action) CPP::Rules::LogCapture(rule, custom_name, action)
+#define CPP_Rules_LogCapture_A_NO_ALLOC(rule, action) CPP_Rules_LogCapture1_NO_ALLOC(rule, #rule, action)
+#define Rules_NS_LogCapture1_A_NO_ALLOC(rule, custom_name, action) Rules::LogCapture(rule, custom_name, action)
+#define Rules_NS_LogCapture_A_NO_ALLOC(rule, action) Rules_NS_LogCapture1_NO_ALLOC(rule, #rule, action)
+
+#define CPP_Rules_LogInput1_NO_ALLOC(rule, custom_name) CPP::Rules::LogInput(rule, custom_name)
+#define CPP_Rules_LogInput_NO_ALLOC(rule) CPP_Rules_LogInput1_NO_ALLOC(rule, #rule)
+#define Rules_NS_LogInput1_NO_ALLOC(rule, custom_name) Rules::LogInput(rule, custom_name)
+#define Rules_NS_LogInput_NO_ALLOC(rule) Rules_NS_LogInput1_NO_ALLOC(rule, #rule)
+
+#define CPP_Rules_LogInput1_A_NO_ALLOC(rule, custom_name, action) CPP::Rules::LogInput(rule, custom_name, action)
+#define CPP_Rules_LogInput_A_NO_ALLOC(rule, action) CPP_Rules_LogInput1_A_NO_ALLOC(rule, #rule, action)
+#define Rules_NS_LogInput1_A_NO_ALLOC(rule, custom_name, action) Rules::LogInput(rule, custom_name, action)
+#define Rules_NS_LogInput_A_NO_ALLOC(rule, action) Rules_NS_LogInput1_A_NO_ALLOC(rule, #rule, action)
+
 namespace CPP {
     namespace Rules {
         class Input {
+#ifdef GTEST_API_
+        public:
+#endif
             Iterator<std::string> &iterator;
             IteratorMatcher::MatchData & match;
             int pops;
@@ -19,16 +67,62 @@ namespace CPP {
                 return iterator.substr(match.begin, match.end);
             }
 
+            std::string quotedString(std::string quote = "'") {
+                std::string out = quote;
+                out += string();
+                out += quote;
+                return out;
+            }
+
+            static std::string quote(const std::string & string, std::string quote = "'") {
+                std::string out = quote;
+                out += string;
+                out += quote;
+                return out;
+            }
+
+            static std::string quote(const char & character, std::string quote = "'") {
+                std::string out = quote;
+                out += character;
+                out += quote;
+                return out;
+            }
+
             std::string stringRemoveCharactersFromEnd(int tail) {
                 return iterator.substr(match.begin, match.end - tail);
+            }
+
+            std::string quotedStringRemoveCharactersFromEnd(int tail, std::string quote = "'") {
+                std::string out = quote;
+                out += stringRemoveCharactersFromEnd(tail);
+                out += quote;
+                return out;
             }
 
             std::string stringRemoveCharactersFromStart(int head) {
                 return iterator.substr(match.begin + head, match.end);
             }
 
+            std::string quotedStringRemoveCharactersFromStart(int head, std::string quote = "'") {
+                std::string out = quote;
+                out += stringRemoveCharactersFromEnd(head);
+                out += quote;
+                return out;
+            }
+
             std::string stringRemoveCharactersFromStartAndEnd(int head, int tail) {
                 return iterator.substr(match.begin + head, match.end - tail);
+            }
+
+            std::string quotedStringRemoveCharactersFromStartAndEnd(int head, int tail, std::string quote = "'") {
+                std::string out = quote;
+                out += stringRemoveCharactersFromStartAndEnd(head, tail);
+                out += quote;
+                return out;
+            }
+
+            void rescan() {
+                iterator.setCurrentToIteratorPops(pops);
             }
 
             void eraseAndRescan() {
@@ -38,15 +132,14 @@ namespace CPP {
                 executed = true;
                 auto savePoint1 = iterator.save();
                 auto savePoint2 = iterator.save(match.begin);
-                auto savePoint3 = iterator.save(match.end);
                 iterator.input.erase(match.begin, match.end);
                 iterator.load(savePoint1);
                 iterator.load(savePoint2, match.begin);
-                iterator.load(savePoint3, match.end);
-                iterator.popIterator(pops);
+                match.end = match.begin;
+                rescan();
             }
 
-            void replaceAndRescan(const char & character) {
+            void replace(const char & character) {
                 if (executed) {
                     throw new std::runtime_error("cannot modify input more than once in the same rule");
                 }
@@ -59,10 +152,12 @@ namespace CPP {
                 iterator.load(savePoint1);
                 iterator.load(savePoint2, match.begin);
                 iterator.load(savePoint3, match.end);
-                iterator.popIterator(pops);
             }
 
-            void replaceAndRescan(const std::string & string) {
+#ifndef GTEST_API_
+        private:
+#endif
+            void replace_(const std::string & string) {
                 if (executed) {
                     throw new std::runtime_error("cannot modify input more than once in the same rule");
                 }
@@ -73,7 +168,22 @@ namespace CPP {
                 iterator.load(savePoint1);
                 iterator.load(savePoint2, match.begin);
                 match.end = match.begin + string.size();
-                iterator.popIterator(pops);
+            }
+
+        public:
+            void replace(const std::string & string) {
+                replace_(string);
+                iterator.setCurrent(match.end);
+            }
+
+            void replaceAndRescan(const char & character) {
+                replace(character);
+                rescan();
+            }
+
+            void replaceAndRescan(const std::string & string) {
+                replace_(string);
+                rescan();
             }
 
             void insert(const char & character) {
@@ -106,6 +216,20 @@ namespace CPP {
                 iterator.load(savePoint3, match.end);
                 match.end += string.size();
             }
+
+            void insertAndRescan(const char & character) {
+                insert(character);
+                rescan();
+            }
+
+            void insertAndRescan(const std::string & string) {
+                insert(string);
+                rescan();
+            }
+
+            Iterator<std::string> &getIterator() const {
+                return iterator;
+            }
         };
 
         using Action = std::function<void(Input input)>;
@@ -114,13 +238,9 @@ namespace CPP {
 
         // an empty rule, this matches nothing
         struct Rule {
-        private:
-            Rule * copy = nullptr;
-        public:
             Action action;
 
             Rule(Action action = NO_ACTION) : action(action) {}
-            Rule(Rule * copy, Action action = NO_ACTION) : copy(copy), action(action) {}
 
             IteratorMatcher::MatchData match(std::string & string, bool doAction = true) {
                 Iterator<std::string> iterator(string);
@@ -132,18 +252,6 @@ namespace CPP {
                 match.matched = false;
                 match.begin = iterator.current();
                 match.end = iterator.current();
-                if (copy != nullptr) {
-                    IteratorMatcher::MatchData tmp = copy->match(iterator, doAction);
-                    if (tmp) {
-                        match.matched = true;
-                        match.end = tmp.end;
-                        match.matches = tmp.matches;
-                        if (doAction) action(Input(iterator, match, match.matches));
-                        return match;
-                    }
-                    iterator.popIterator(tmp.matches);
-                }
-                if (doAction) action(Input(iterator, match, match.matches));
                 return match;
             };
 
@@ -160,14 +268,17 @@ namespace CPP {
                 match.matched = true;
                 match.begin = iterator.current();
                 iterator.pushIterator();
+                match.matches++;
                 match.end = iterator.current();
-                match.matches = 1;
                 if (doAction) action(Input(iterator, match, match.matches));
                 return match;
             }
         };
 
-        struct AdvanceInputBy : Rule {
+        class AdvanceInputBy : public Rule {
+#ifdef GTEST_API_
+            public:
+#endif
             int n;
 
         public:
@@ -181,9 +292,9 @@ namespace CPP {
                 match.matched = true;
                 match.begin = iterator.current();
                 iterator.pushIterator();
+                match.matches++;
                 iterator.advance(n);
                 match.end = iterator.current();
-                match.matches = 1;
                 if (doAction) action(Input(iterator, match, match.matches));
                 return match;
             }
@@ -211,17 +322,9 @@ namespace CPP {
             using Rule::match;
 
             virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
-                IteratorMatcher::MatchData match;
-                match.matched = false;
-                match.begin = iterator.current();
-                match.end = iterator.current();
-                auto tmp = IteratorMatcher::match(iterator);
-                if (tmp.matched) {
-                    match.matched = true;
-                    match.end = tmp.end;
-                    match.matches++;
-                    if (doAction) action(Input(iterator, match, match.matches));
-                    return match;
+                IteratorMatcher::MatchData match = IteratorMatcher::match(iterator);
+                if (match && doAction) {
+                    action(Input(iterator, match, match.matches));
                 }
                 return match;
             }
@@ -236,12 +339,53 @@ namespace CPP {
 
             virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
                 auto match = IteratorMatcher::match(iterator, character);
-                if (match.matched) {
+                if (match && doAction) {
+                    action(Input(iterator, match, match.matches));
+                }
+                return match;
+            }
+        };
+
+        struct EndOfFile : Rule {
+            EndOfFile(Action action = NO_ACTION) : Rule(action) {}
+
+            using Rule::match;
+
+            virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
+                IteratorMatcher::MatchData match;
+                match.begin = iterator.current();
+                match.end = iterator.current();
+                match.matched = false;
+                if (!iterator.has_next()) {
+                    match.matched = true;
+                    iterator.pushIterator();
                     match.matches++;
                     if (doAction) action(Input(iterator, match, match.matches));
                     return match;
                 }
-                return false;
+
+                return match;
+            }
+        };
+
+        struct NewlineOrEOF : Rule {
+            NewlineOrEOF(Action action = NO_ACTION) : Rule(action) {}
+
+            using Rule::match;
+
+            virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
+                auto match = IteratorMatcher::match(iterator, '\n');
+
+                if (match.matched) {
+                    if (doAction) action(Input(iterator, match, match.matches));
+                } else if (!iterator.has_next()) {
+                    match.matched = true;
+                    iterator.pushIterator();
+                    match.matches++;
+                    if (doAction) action(Input(iterator, match, match.matches));
+                }
+
+                return match;
             }
         };
 
@@ -254,12 +398,29 @@ namespace CPP {
 
             virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
                 auto match = IteratorMatcher::match(iterator, string);
-                if (match.matched) {
-                    match.matches++;
-                    if (doAction) action(Input(iterator, match, match.matches));
-                    return match;
+
+                if (match && doAction) {
+                    action(Input(iterator, match, match.matches));
                 }
-                return false;
+                return match;
+            }
+        };
+
+        struct Error : Rule {
+            std::string message;
+
+            Error(const std::string &message, Action action = NO_ACTION) : message(message), Rule(action) {}
+
+            using Rule::match;
+
+            virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
+                IteratorMatcher::MatchData match;
+                match.begin = iterator.current();
+                match.end = iterator.current();
+                match.matched = false;
+                if (doAction) action(Input(iterator, match, 0));
+                XOut << message << XLog::Abort;
+                return match;
             }
         };
 
@@ -319,7 +480,11 @@ namespace CPP {
             using Rule::match;
 
             virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
-                return rule->match(iterator, doAction);
+                IteratorMatcher::MatchData match = rule->match(iterator, doAction);
+                if (match && doAction) {
+                    action(Input(iterator, match, match.matches));
+                }
+                return match;
             }
 
             virtual ~RuleHolder() {
@@ -345,7 +510,6 @@ namespace CPP {
         };
 
         struct TemporaryAction : RuleHolder {
-        public:
             using RuleHolder::RuleHolder;
 
             using Rule::match;
@@ -358,6 +522,151 @@ namespace CPP {
                 return match;
             };
 
+        };
+
+        struct LogCurrentCharacter : Rule {
+
+            LogCurrentCharacter(Action action = NO_ACTION) : Rule(action) {}
+
+            using Rule::match;
+
+            virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
+                IteratorMatcher::MatchData match;
+                match.begin = iterator.current();
+                match.matched = true;
+                iterator.pushIterator();
+                match.matches++;
+                match.end = iterator.current();
+                XOut << "current character: " << Input::quote(iterator.peekNext()) << std::endl;
+                if (doAction) action(Input(iterator, match, match.matches));
+                return match;
+            }
+        };
+
+        class LogMatchStatus : public RuleHolder {
+#ifdef GTEST_API_
+            public:
+#endif
+            std::string ruleName;
+        public:
+            LogMatchStatus(Rule *rule, const std::string & ruleName, Action action = NO_ACTION) : ruleName(ruleName), RuleHolder(rule, action) {}
+
+            using Rule::match;
+
+            virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
+                IteratorMatcher::MatchData match = rule->match(iterator, doAction);
+                XOut << "rule '" << ruleName << "' was " << (match ? "matched" : "not matched") << std::endl;
+                if (doAction) action(Input(iterator, match, match.matches));
+                return match;
+            };
+
+        };
+
+        class LogCapture : public RuleHolder {
+#ifdef GTEST_API_
+            public:
+#endif
+            std::string ruleName;
+        public:
+            LogCapture(Rule *rule, const std::string & ruleName, Action action = NO_ACTION) : ruleName(ruleName), RuleHolder(rule, action) {}
+
+            using Rule::match;
+
+            virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
+                IteratorMatcher::MatchData match = rule->match(iterator, doAction);
+                if (match) {
+                    XOut << "rule '" << ruleName << "' captured " << Input(iterator, match, 0).quotedString() << std::endl;
+                } else {
+                    XOut << "rule '" << ruleName << "' did not capture anything because it did not match" << std::endl;
+                }
+                if (doAction) action(Input(iterator, match, match.matches));
+                return match;
+            };
+
+        };
+
+        class LogInput : public RuleHolder {
+#ifdef GTEST_API_
+            public:
+#endif
+            std::string ruleName;
+        public:
+            LogInput(Rule *rule, const std::string & ruleName, Action action = NO_ACTION) : ruleName(ruleName), RuleHolder(rule, action) {}
+
+            using Rule::match;
+
+            virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
+                IteratorMatcher::MatchData match = rule->match(iterator, doAction);
+                XOut << "input after rule '" << ruleName << "' : " << iterator.currentString() << std::endl;
+                if (doAction) action(Input(iterator, match, match.matches));
+                return match;
+            };
+
+        };
+
+        class ErrorIfMatch : public RuleHolder {
+#ifdef GTEST_API_
+            public:
+#endif
+            std::string message;
+        public:
+            ErrorIfMatch(Rule *rule, const std::string & message, Action action = NO_ACTION) : message(message), RuleHolder(rule, action) {}
+
+            using Rule::match;
+
+            virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
+                IteratorMatcher::MatchData match = rule->match(iterator, doAction);
+                if (match) {
+                    if (doAction) action(Input(iterator, match, 0));
+                    XOut << message << XLog::Abort;
+                }
+                return match;
+            };
+
+        };
+
+        class ErrorIfNotMatch : public RuleHolder {
+#ifdef GTEST_API_
+            public:
+#endif
+            std::string message;
+        public:
+            ErrorIfNotMatch(Rule *rule, const std::string & message, Action action = NO_ACTION) : message(message), RuleHolder(rule, action) {}
+
+            using Rule::match;
+
+            virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
+                IteratorMatcher::MatchData match = rule->match(iterator, doAction);
+                if (!match) {
+                    if (doAction) action(Input(iterator, match, 0));
+                    XOut << message << XLog::Abort;
+                }
+                return match;
+            };
+
+        };
+
+        struct Optional : RuleHolder {
+
+            Optional(Rule * rule, Action action = NO_ACTION) : RuleHolder(rule, action) {}
+
+            using Rule::match;
+
+            virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
+                IteratorMatcher::MatchData match;
+                match.begin = iterator.current();
+                match.end = iterator.current();
+                IteratorMatcher::MatchData tmp = rule->match(iterator, doAction);
+                if (tmp) {
+                    match.end = tmp.end;
+                    match.matches = tmp.matches;
+                }
+                match.matched = true;
+                iterator.pushIterator();
+                match.matches++;
+                if (doAction) action(Input(iterator, match, match.matches));
+                return match;
+            }
         };
 
         struct OneOrMore : RuleHolder {
@@ -376,10 +685,58 @@ namespace CPP {
                         match.matches += tmp.matches;
                     }
                     if (doAction) action(Input(iterator, match, match.matches));
-                    return match;
                 }
 
                 return match;
+            }
+        };
+
+        struct ZeroOrMore : RuleHolder {
+
+            ZeroOrMore(Rule * rule, Action action = NO_ACTION) : RuleHolder(new Optional(new OneOrMore(rule)), action) {}
+
+            using Rule::match;
+
+            virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
+                IteratorMatcher::MatchData match = rule->match(iterator, doAction);
+                if (match && doAction) {
+                    action(Input(iterator, match, match.matches));
+                }
+                return match;
+            }
+        };
+
+        struct MatchBUntilA : Rule {
+            RuleHolder A;
+            RuleHolder B;
+
+            MatchBUntilA(Rule * A, Rule * B, Action action = NO_ACTION) : A(A), B(B), Rule(action) {}
+
+            using Rule::match;
+
+            virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
+                // until A matches, match B
+                IteratorMatcher::MatchData match;
+                match.begin = iterator.current();
+                match.end = iterator.current();
+                match.matched = false;
+                while (true) {
+                    IteratorMatcher::MatchData tmp = A.match(iterator, doAction);
+                    if (!tmp) {
+                        tmp = B.match(iterator, doAction);
+                        if (!tmp) {
+                            return match;
+                        }
+                        match.end = tmp.end;
+                        match.matches += tmp.matches;
+                    } else {
+                        match.matched = true;
+                        match.end = tmp.end;
+                        match.matches += tmp.matches;
+                        if (doAction) action(Input(iterator, match, match.matches));
+                        return match;
+                    }
+                }
             }
         };
 
@@ -399,10 +756,16 @@ namespace CPP {
                 match.begin = iterator.current();
                 match.end = iterator.current();
                 match.matched = false;
+                if (rules.size() == 0) {
+                    match.matched = true;
+                    iterator.pushIterator();
+                    match.matches++;
+                    if (doAction) action(Input(iterator, match, match.matches));
+                    return match;
+                }
                 for (Rule & rule : rules) {
-                    IteratorMatcher::MatchData tmp = rule.match(iterator, doAction);
-                    if (tmp) {
-                        match = tmp;
+                    match = rule.match(iterator, doAction);
+                    if (match) {
                         if (doAction) action(Input(iterator, match, match.matches));
                         return match;
                     }
@@ -426,17 +789,32 @@ namespace CPP {
                 IteratorMatcher::MatchData match;
                 match.begin = iterator.current();
                 match.end = iterator.current();
-                match.matched = true;
+                match.matched = false;
+                if (rules.size() == 0) {
+                    match.matched = true;
+                    iterator.pushIterator();
+                    match.matches++;
+                    if (doAction) action(Input(iterator, match, match.matches));
+                    return match;
+                }
                 for (Rule & rule : rules) {
                     IteratorMatcher::MatchData tmp = rule.match(iterator, doAction);
                     if (!tmp) {
-                        match.matched = false;
                         iterator.popIterator(match.matches);
+                        match.matches = 0;
                         return match;
                     }
+//                    XOut << "match begin: " << iterator.currentPosition(match.begin) << std::endl;
+//                    XOut << "match end: " << iterator.currentPosition(match.end) << std::endl;
+//                    XOut << "tmp begin: " << iterator.currentPosition(tmp.begin) << std::endl;
+//                    XOut << "tmp end: " << iterator.currentPosition(tmp.end) << std::endl;
                     match.end = tmp.end;
+//                    XOut << "adding matches: " << tmp.matches << std::endl;
                     match.matches += tmp.matches;
                 }
+                match.matched = true;
+                iterator.pushIterator();
+                match.matches++;
                 if (doAction) action(Input(iterator, match, match.matches));
                 return match;
             }
@@ -450,12 +828,13 @@ namespace CPP {
 
             virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
                 IteratorMatcher::MatchData match;
-                match.matched = true;
                 match.begin = iterator.current();
                 match.end = iterator.current();
+                match.matched = false;
                 while(iterator.has_next()) {
                     IteratorMatcher::MatchData tmp = rule->match(iterator, doAction);
                     if (tmp) {
+                        match.matched = true;
                         match.end = tmp.end;
                         match.matches = tmp.matches;
                         if (doAction) action(Input(iterator, match, match.matches));
@@ -465,31 +844,6 @@ namespace CPP {
                     }
                 }
                 iterator.setCurrent(match.begin);
-                match = false;
-                return match;
-            }
-        };
-
-        struct Optional : RuleHolder {
-
-            Optional(Rule * rule, Action action = NO_ACTION) : RuleHolder(rule, action) {}
-
-            using Rule::match;
-
-            virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
-                IteratorMatcher::MatchData match;
-                match.matched = true;
-                match.begin = iterator.current();
-                match.end = iterator.current();
-                IteratorMatcher::MatchData tmp = rule->match(iterator, doAction);
-                if (tmp) {
-                    match.end = tmp.end;
-                    match.matches = tmp.matches;
-                    if (doAction) action(Input(iterator, match, match.matches));
-                    return match;
-                }
-                iterator.popIterator(tmp.matches);
-                if (doAction) action(Input(iterator, match, match.matches));
                 return match;
             }
         };
@@ -510,8 +864,8 @@ namespace CPP {
                     // unexpected EOF
                     return false;
                 }
-                IteratorMatcher::MatchData matchData;
-                matchData.begin = iterator.current();
+                IteratorMatcher::MatchData match;
+                match.begin = iterator.current();
                 iterator.pushIterator();
                 char ch = iterator.next();
                 Iterator l(letters);
@@ -528,15 +882,16 @@ namespace CPP {
                         l.advance();
                         continue;
                     }
-                    matchData.end = iterator.current();
-                    matchData.matched = true;
-                    matchData.matches++;
-                    return matchData;
+                    match.end = iterator.current();
+                    match.matched = true;
+                    match.matches++;
+                    if (doAction) action(Input(iterator, match, match.matches));
+                    return match;
                 }
                 // input does not match
                 iterator.popIterator();
-                if (doAction) action(Input(iterator, matchData, matchData.matches));
-                return matchData;
+                match.matches = 0;
+                return match;
             }
         };
 
@@ -551,9 +906,12 @@ namespace CPP {
                 match.begin = iterator.current();
                 match.end = iterator.current();
                 IteratorMatcher::MatchData tmp = rule->match(iterator, false);
+                iterator.popIterator(tmp.matches);
+                tmp.matches = 0;
                 if (tmp) {
                     match.matched = true;
-                    iterator.setCurrent(match.begin);
+                    iterator.pushIterator();
+                    match.matches++;
                     if (doAction) action(Input(iterator, match, match.matches));
                     return match;
                 }
@@ -573,18 +931,20 @@ namespace CPP {
                 match.begin = iterator.current();
                 match.end = iterator.current();
                 IteratorMatcher::MatchData tmp = rule->match(iterator, false);
-                if (tmp) {
-                    match.matched = false;
-                    match.end = tmp.end;
-                    match.matches = tmp.matches;
-                    iterator.popIterator();
+                iterator.popIterator(tmp.matches);
+                tmp.matches = 0;
+                if (!tmp) {
+                    match.matched = true;
+                    iterator.pushIterator();
+                    match.matches++;
+                    if (doAction) action(Input(iterator, match, match.matches));
                     return match;
                 }
-                match.matched = true;
-                iterator.setCurrent(match.begin);
-                if (doAction) action(Input(iterator, match, match.matches));
+                match.matched = false;
                 return match;
             }
         };
     }
 }
+
+#endif
