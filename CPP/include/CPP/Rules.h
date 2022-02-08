@@ -2,6 +2,7 @@
 #define CPP_RULES_H
 
 #include <functional>
+#include <stack>
 #include <string>
 #include <vector>
 #include "IteratorMatcher.h"
@@ -17,18 +18,6 @@
 #define Rules_NS_LogCapture1_A(rule, custom_name, action) new Rules::LogCapture(rule, custom_name, action)
 #define Rules_NS_LogCapture_A(rule, action) Rules_NS_LogCapture1(rule, #rule, action)
 
-#define CPP_Rules_LogInput1(rule, custom_name) new CPP::Rules::LogInput(rule, custom_name)
-#define CPP_Rules_LogInput(rule) CPP_Rules_LogInput1(rule, #rule)
-#define Rules_NS_LogInput1(rule, custom_name) new Rules::LogInput(rule, custom_name)
-#define Rules_NS_LogInput(rule) Rules_NS_LogInput1(rule, #rule)
-
-#define CPP_Rules_LogInput1_A(rule, custom_name, action) new CPP::Rules::LogInput(rule, custom_name, action)
-#define CPP_Rules_LogInput_A(rule, action) CPP_Rules_LogInput1_A(rule, #rule, action)
-#define Rules_NS_LogInput1_A(rule, custom_name, action) new Rules::LogInput(rule, custom_name, action)
-#define Rules_NS_LogInput_A(rule, action) Rules_NS_LogInput1_A(rule, #rule, action)
-
-
-
 #define CPP_Rules_LogCapture1_NO_ALLOC(rule, custom_name) CPP::Rules::LogCapture(rule, custom_name)
 #define CPP_Rules_LogCapture_NO_ALLOC(rule) CPP_Rules_LogCapture1_NO_ALLOC(rule, #rule)
 #define Rules_NS_LogCapture1_NO_ALLOC(rule, custom_name) Rules::LogCapture(rule, custom_name)
@@ -39,6 +28,18 @@
 #define Rules_NS_LogCapture1_A_NO_ALLOC(rule, custom_name, action) Rules::LogCapture(rule, custom_name, action)
 #define Rules_NS_LogCapture_A_NO_ALLOC(rule, action) Rules_NS_LogCapture1_NO_ALLOC(rule, #rule, action)
 
+
+
+#define CPP_Rules_LogInput1(rule, custom_name) new CPP::Rules::LogInput(rule, custom_name)
+#define CPP_Rules_LogInput(rule) CPP_Rules_LogInput1(rule, #rule)
+#define Rules_NS_LogInput1(rule, custom_name) new Rules::LogInput(rule, custom_name)
+#define Rules_NS_LogInput(rule) Rules_NS_LogInput1(rule, #rule)
+
+#define CPP_Rules_LogInput1_A(rule, custom_name, action) new CPP::Rules::LogInput(rule, custom_name, action)
+#define CPP_Rules_LogInput_A(rule, action) CPP_Rules_LogInput1_A(rule, #rule, action)
+#define Rules_NS_LogInput1_A(rule, custom_name, action) new Rules::LogInput(rule, custom_name, action)
+#define Rules_NS_LogInput_A(rule, action) Rules_NS_LogInput1_A(rule, #rule, action)
+
 #define CPP_Rules_LogInput1_NO_ALLOC(rule, custom_name) CPP::Rules::LogInput(rule, custom_name)
 #define CPP_Rules_LogInput_NO_ALLOC(rule) CPP_Rules_LogInput1_NO_ALLOC(rule, #rule)
 #define Rules_NS_LogInput1_NO_ALLOC(rule, custom_name) Rules::LogInput(rule, custom_name)
@@ -48,6 +49,30 @@
 #define CPP_Rules_LogInput_A_NO_ALLOC(rule, action) CPP_Rules_LogInput1_A_NO_ALLOC(rule, #rule, action)
 #define Rules_NS_LogInput1_A_NO_ALLOC(rule, custom_name, action) Rules::LogInput(rule, custom_name, action)
 #define Rules_NS_LogInput_A_NO_ALLOC(rule, action) Rules_NS_LogInput1_A_NO_ALLOC(rule, #rule, action)
+
+
+
+#define CPP_Rules_LogMatchStatus1(rule, custom_name) new CPP::Rules::LogMatchStatus(rule, custom_name)
+#define CPP_Rules_LogMatchStatus(rule) CPP_Rules_LogMatchStatus1(rule, #rule)
+#define Rules_NS_LogMatchStatus1(rule, custom_name) new Rules::LogMatchStatus(rule, custom_name)
+#define Rules_NS_LogMatchStatus(rule) Rules_NS_LogMatchStatus1(rule, #rule)
+
+#define CPP_Rules_LogMatchStatus1_A(rule, custom_name, action) new CPP::Rules::LogMatchStatus(rule, custom_name, action)
+#define CPP_Rules_LogMatchStatus_A(rule, action) CPP_Rules_LogMatchStatus1(rule, #rule, action)
+#define Rules_NS_LogMatchStatus1_A(rule, custom_name, action) new Rules::LogMatchStatus(rule, custom_name, action)
+#define Rules_NS_LogMatchStatus_A(rule, action) Rules_NS_LogMatchStatus1(rule, #rule, action)
+
+#define CPP_Rules_LogMatchStatus1_NO_ALLOC(rule, custom_name) CPP::Rules::LogMatchStatus(rule, custom_name)
+#define CPP_Rules_LogMatchStatus_NO_ALLOC(rule) CPP_Rules_LogMatchStatus1_NO_ALLOC(rule, #rule)
+#define Rules_NS_LogMatchStatus1_NO_ALLOC(rule, custom_name) Rules::LogMatchStatus(rule, custom_name)
+#define Rules_NS_LogMatchStatus_NO_ALLOC(rule) Rules_NS_LogMatchStatus1_NO_ALLOC(rule, #rule)
+
+#define CPP_Rules_LogMatchStatus1_A_NO_ALLOC(rule, custom_name, action) CPP::Rules::LogMatchStatus(rule, custom_name, action)
+#define CPP_Rules_LogMatchStatus_A_NO_ALLOC(rule, action) CPP_Rules_LogMatchStatus1_NO_ALLOC(rule, #rule, action)
+#define Rules_NS_LogMatchStatus1_A_NO_ALLOC(rule, custom_name, action) Rules::LogMatchStatus(rule, custom_name, action)
+#define Rules_NS_LogMatchStatus_A_NO_ALLOC(rule, action) Rules_NS_LogMatchStatus1_NO_ALLOC(rule, #rule, action)
+
+
 
 namespace CPP {
     namespace Rules {
@@ -62,6 +87,10 @@ namespace CPP {
 
         public:
             Input(Iterator<std::string> &iterator, IteratorMatcher::MatchData &match, int pops) : iterator(iterator), match(match), pops(pops) {}
+
+            Input copy(Iterator<std::string> & copy) {
+                return Input(copy, match, 0);
+            }
 
             std::string string() {
                 return iterator.substr(match.begin, match.end);
@@ -431,9 +460,10 @@ namespace CPP {
             };
             static std::vector<Reference*> rules;
             Reference * ref = nullptr;
-            Rule * rule;
+            Rule * rule = nullptr;
 
             RuleHolder(Rule *rule, Action action = NO_ACTION) : Rule(action) {
+                if (rule == nullptr) return;
                 bool exists = false;
                 for (Reference * reference : rules) {
                     if (reference->rule == rule) {
@@ -454,33 +484,51 @@ namespace CPP {
             RuleHolder(const RuleHolder & other) {
                 ref = other.ref;
                 rule = other.rule;
-                ref->reference++;
+                if (ref != nullptr) {
+                    ref->reference++;
+                }
             };
 
             RuleHolder & operator=(const RuleHolder & other) {
                 ref = other.ref;
                 rule = other.rule;
-                ref->reference++;
+                if (ref != nullptr) {
+                    ref->reference++;
+                }
                 return *this;
             };
 
             RuleHolder(RuleHolder && other) noexcept {
                 ref = other.ref;
                 rule = other.rule;
-                ref->reference++;
+                if (ref != nullptr) {
+                    ref->reference++;
+                }
             }
 
             RuleHolder & operator=(RuleHolder && other)  noexcept {
                 ref = other.ref;
                 rule = other.rule;
-                ref->reference++;
+                if (ref != nullptr) {
+                    ref->reference++;
+                }
                 return *this;
             }
 
             using Rule::match;
 
             virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
-                IteratorMatcher::MatchData match = rule->match(iterator, doAction);
+                IteratorMatcher::MatchData match;
+                if (ref == nullptr) {
+                    match.begin = iterator.current();
+                    match.end = iterator.current();
+                    match.matched = true;
+                    iterator.pushIterator();
+                    match.matches++;
+                    if (doAction) action(Input(iterator, match, match.matches));
+                    return match;
+                }
+                match = rule->match(iterator, doAction);
                 if (match && doAction) {
                     action(Input(iterator, match, match.matches));
                 }
@@ -844,6 +892,51 @@ namespace CPP {
                     }
                 }
                 iterator.setCurrent(match.begin);
+                return match;
+            }
+        };
+
+        class Stack : public Rule {
+#ifdef GTEST_API_
+            public:
+#endif
+            std::stack<RuleHolder> ruleStack;
+            std::stack<Action> actionStack;
+
+            RuleHolder baseRule;
+            Action baseAction;
+
+        public:
+
+            Stack() : baseRule(nullptr) {};
+
+            void setBase(Rule * rule, Action action = NO_ACTION) {
+                baseRule = rule;
+                baseAction = action;
+            }
+
+            void push(Rule * rule, Action action = NO_ACTION) {
+                ruleStack.push(rule);
+                actionStack.push(action);
+            }
+
+            void pop() {
+                if (!ruleStack.empty()) ruleStack.pop();
+                if (!actionStack.empty()) actionStack.pop();
+            }
+
+            void popAll() {
+                while (!ruleStack.empty()) ruleStack.pop();
+                while (!actionStack.empty()) actionStack.pop();
+            }
+
+            using Rule::match;
+
+            virtual IteratorMatcher::MatchData match(Iterator<std::string> &iterator, bool doAction = true) override {
+                IteratorMatcher::MatchData match = (ruleStack.empty() ? baseRule : ruleStack.top()).rule->match(iterator, doAction);
+                if (match && doAction) {
+                    (actionStack.empty() ? baseAction : actionStack.top())(Input(iterator, match, match.matches));
+                }
                 return match;
             }
         };

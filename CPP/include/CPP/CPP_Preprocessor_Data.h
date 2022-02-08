@@ -56,14 +56,20 @@ namespace CPP {
         }
 
         enum preprocessor_state_t {
-            none,
+            no_preprocessor_state,
             define,
             undef
         };
 
-        preprocessor_state_t preprocessor_state = none;
+        enum preprocessor_expansion_state_t {
+            no_expansion_state,
+            argument_count,
+            expansion
+        };
 
-        XLogMemory data;
+        preprocessor_state_t preprocessor_state = no_preprocessor_state;
+
+        preprocessor_expansion_state_t expansion_state = no_expansion_state;
 
         struct Macro {
             enum Type {
@@ -75,11 +81,16 @@ namespace CPP {
             std::string id;
             std::string content;
             std::vector<std::string> args;
+            std::vector<std::string> args_content;
             size_t count = 0;
         };
 
         std::unordered_map<std::string, Macro> function_definitions;
         std::unordered_map<std::string, Macro> definitions;
+
+        bool expanding_function = false;
+
+//        std::stack<std::string> function_being_expanded;
 
         std::string current_id;
 

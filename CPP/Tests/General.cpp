@@ -1289,3 +1289,336 @@ TEST(CPP_TESTS, General) {
         })
     ).match(a));
 }
+
+// #define foo(x) 9 x(x) 9
+// 1 foo(foo) 2 foo(bar) 3
+
+TEST(Macro_Tests, A) {
+    std::string a = "1 foo(foo) 2 foo(bar) 3";
+
+    XOut << "a: " << a << std::endl;
+
+    auto grammar = new CPP::Rules::Sequence({
+        CPP_Rules_LogMatchStatus(new CPP::Rules::String("1 ")),
+        CPP_Rules_LogMatchStatus(new CPP::Rules::String("foo(foo)", [] (CPP::Rules::Input in) {
+            XOut << "capture: " << in.string() << std::endl;
+            in.replace("9 x(x) 9");
+        })),
+        CPP_Rules_LogMatchStatus(new CPP::Rules::String(" 2 ")),
+        CPP_Rules_LogMatchStatus(new CPP::Rules::String("foo(bar)", [] (CPP::Rules::Input in) {
+            XOut << "capture: " << in.string() << std::endl;
+            in.replace("9 x(x) 9");
+        })),
+        CPP_Rules_LogMatchStatus(new CPP::Rules::String(" 3"))
+    });
+
+    EXPECT_TRUE(grammar->match(a));
+
+    XOut << "a: " << a << std::endl;
+
+    delete grammar;
+}
+
+TEST(Macro_Tests, B) {
+    std::string a = "1 foo(foo) 2 foo(bar) 3";
+
+    XOut << "a: " << a << std::endl;
+
+    auto grammar = new CPP::Rules::Sequence({
+        CPP_Rules_LogMatchStatus(new CPP::Rules::String("1 ")),
+        CPP_Rules_LogMatchStatus(new CPP::Rules::String("foo(foo)", [] (CPP::Rules::Input in) {
+            XOut << "capture: " << in.string() << std::endl;
+            in.replace("9 foo(foo) 9");
+        })),
+        CPP_Rules_LogMatchStatus(new CPP::Rules::String(" 2 ")),
+        CPP_Rules_LogMatchStatus(new CPP::Rules::String("foo(bar)", [] (CPP::Rules::Input in) {
+            XOut << "capture: " << in.string() << std::endl;
+            in.replace("9 bar(bar) 9");
+        })),
+        CPP_Rules_LogMatchStatus(new CPP::Rules::String(" 3"))
+    });
+
+    EXPECT_TRUE(grammar->match(a));
+
+    XOut << "a: " << a << std::endl;
+
+    delete grammar;
+}
+
+TEST(Macro_Tests, C) {
+    std::string a = "1 foo(foo) 2 foo(bar) 3";
+
+    XOut << "a: " << a << std::endl;
+
+    auto identifier = new CPP::Rules::Sequence({
+        new CPP::Rules::Range({'a', 'z', 'A', 'Z', '_'}),
+        new CPP::Rules::ZeroOrMore(
+            new CPP::Rules::Range({'a', 'z', 'A', 'Z', '0', '9', '_'})
+        )
+    });
+
+    auto parens_open = new CPP::Rules::Char('(');
+    auto parens_close = new CPP::Rules::Char(')');
+
+    auto function = new CPP::Rules::Sequence({
+        identifier, parens_open, identifier, parens_close
+    });
+
+    function->action = [] (CPP::Rules::Input in) {
+        XOut << "capture: " << in.string() << std::endl;
+        in.replace("9 x(x) 9");
+    };
+
+    auto grammar = new CPP::Rules::Sequence({
+        new CPP::Rules::String("1 "),
+        function,
+        new CPP::Rules::String(" 2 "),
+        function,
+        new CPP::Rules::String(" 3")
+    });
+
+    EXPECT_TRUE(grammar->match(a));
+
+    XOut << "a: " << a << std::endl;
+
+    delete grammar;
+}
+
+TEST(Macro_Tests, D) {
+    std::string a = "1 foo(foo) 2 foo(bar) 3";
+
+    XOut << "a: " << a << std::endl;
+
+    auto identifier = new CPP::Rules::Sequence({
+        new CPP::Rules::Range({'a', 'z', 'A', 'Z', '_'}),
+        new CPP::Rules::ZeroOrMore(
+            new CPP::Rules::Range({'a', 'z', 'A', 'Z', '0', '9', '_'})
+        )
+    });
+
+    auto parens_open = new CPP::Rules::Char('(');
+    auto parens_close = new CPP::Rules::Char(')');
+
+    auto function_tmp = new CPP::Rules::Sequence({
+        identifier, parens_open, identifier, parens_close
+    });
+
+    auto function = new CPP::Rules::Sequence({
+        new CPP::Rules::At(function_tmp), function_tmp
+    });
+
+    function->action = [] (CPP::Rules::Input in) {
+        XOut << "capture: " << in.string() << std::endl;
+        in.replace("9 x(x) 9");
+    };
+
+    auto grammar = new CPP::Rules::OneOrMore(
+        new CPP::Rules::Or({
+           function,
+           new CPP::Rules::Any()
+       })
+    );
+
+    EXPECT_TRUE(grammar->match(a));
+
+    XOut << "a: " << a << std::endl;
+
+    delete grammar;
+}
+
+// #define x x y
+// #define y x y
+// x
+
+/*
+[ RUN      ] Macro_Tests.E
+a: 1 x 2 x
+a: 1 x x y 2 x x y
+[       OK ] Macro_Tests.E (0 ms)
+*/
+TEST(Macro_Tests, E) {
+    std::string a = "1 x 2 x";
+
+    XOut << "a: " << a << std::endl;
+
+    /*
+14:48:18 smallville7123: where the grammar mutation comes in, is in the case of
+14:48:19 smallville7123: "1 x 2 x" -> "1 x y 2 x" // x must not be re-expanded but "2 x" must also allow x to be expanded
+14:49:11 smallville7123: in here, we would instead do "1 x 2 x" -> "1 x y 2 x" // a rule would be inserted in order to match "x y" and expand it as needed
+14:49:49 smallville7123: and this is where the stack comes in
+14:50:20 smallville7123: if say "y" expands to "x y" then we need to insert another rule to expand "x y" (which will not expand further)
+14:50:56 smallville7123: so "x" -> "x y" -> "x x y" -> no more expansions, pop to initial rule
+     */
+
+
+    auto x_0 = new CPP::Rules::RuleHolder(new CPP::Rules::Char('x'));
+
+    CPP::Rules::Action base_0;
+    CPP::Rules::Action base_1;
+    CPP::Rules::Action base_2;
+    base_0 = [&](CPP::Rules::Input in) {
+        delete x_0->rule;
+        // #define x x y
+        x_0->rule = new CPP::Rules::String("x y");
+        x_0->action = base_1;
+        in.replaceAndRescan("x y");
+    };
+    base_1 = [&](CPP::Rules::Input in) {
+        delete x_0->rule;
+        // #define y x y
+        x_0->rule = new CPP::Rules::String("x x y");
+        x_0->action = base_2;
+        in.replaceAndRescan("x x y");
+    };
+    base_2 = [&](CPP::Rules::Input in) {
+        delete x_0->rule;
+        x_0->rule = new CPP::Rules::Char('x');
+        x_0->action = base_0;
+        // no more replacements
+    };
+
+    x_0->action = base_0;
+
+    auto grammar = new CPP::Rules::OneOrMore(
+        new CPP::Rules::Or({
+           x_0,
+           new CPP::Rules::Any()
+       })
+    );
+
+    EXPECT_TRUE(grammar->match(a));
+
+    XOut << "a: " << a << std::endl;
+
+    delete grammar;
+}
+
+/*
+[ RUN      ] Macro_Tests.F
+a: 1 x 2 x
+base
+base + 1
+base + 2
+pop to base
+base
+base + 1
+base + 2
+pop to base
+a: 1 x x y 2 x x y
+[       OK ] Macro_Tests.F (0 ms)
+*/
+TEST(Macro_Tests, F) {
+    std::string a = "1 x 2 x";
+
+    XOut << "a: " << a << std::endl;
+
+    /*
+14:48:18 smallville7123: where the grammar mutation comes in, is in the case of
+14:48:19 smallville7123: "1 x 2 x" -> "1 x y 2 x" // x must not be re-expanded but "2 x" must also allow x to be expanded
+14:49:11 smallville7123: in here, we would instead do "1 x 2 x" -> "1 x y 2 x" // a rule would be inserted in order to match "x y" and expand it as needed
+14:49:49 smallville7123: and this is where the stack comes in
+14:50:20 smallville7123: if say "y" expands to "x y" then we need to insert another rule to expand "x y" (which will not expand further)
+14:50:56 smallville7123: so "x" -> "x y" -> "x x y" -> no more expansions, pop to initial rule
+     */
+
+    auto x_stack = new CPP::Rules::Stack();
+
+    x_stack->setBase(new CPP::Rules::Char('x'), [&](CPP::Rules::Input in) {
+        // #define x x y
+        XOut << "base" << std::endl;
+        x_stack->push(new CPP::Rules::String("x y"),[&](CPP::Rules::Input in) {
+            // #define y x y
+            XOut << "base + 1" << std::endl;
+            x_stack->push(new CPP::Rules::String("x x y"), [&](CPP::Rules::Input in) {
+                // no more replacements
+                XOut << "base + 2" << std::endl;
+                XOut << "pop to base" << std::endl;
+                x_stack->popAll();
+                // no more replacements
+            });
+            // #define y x y
+            in.replaceAndRescan("x x y");
+        });
+        // #define x x y
+        in.replaceAndRescan("x y");
+    });
+
+    auto grammar = new CPP::Rules::OneOrMore(
+        new CPP::Rules::Or({
+           x_stack,
+           new CPP::Rules::Any()
+       })
+    );
+
+    EXPECT_TRUE(grammar->match(a));
+
+    XOut << "a: " << a << std::endl;
+
+    delete grammar;
+}
+
+TEST(Macro_Tests, G) {
+    std::string a = "1 foo(foo) 2 foo(bar) 3";
+
+    XOut << "a: " << a << std::endl;
+
+    auto identifier = new CPP::Rules::Sequence({
+        new CPP::Rules::Range({'a', 'z', 'A', 'Z', '_'}),
+        new CPP::Rules::ZeroOrMore(
+            new CPP::Rules::Range({'a', 'z', 'A', 'Z', '0', '9', '_'})
+        )
+    });
+
+    auto parens_open = new CPP::Rules::Char('(');
+    auto parens_close = new CPP::Rules::Char(')');
+
+    auto function_tmp = new CPP::Rules::Sequence({
+        identifier, parens_open, identifier, parens_close
+    });
+
+
+
+
+
+
+
+
+
+    auto function_stack = new CPP::Rules::Stack();
+
+    function_stack->setBase(
+        new CPP::Rules::Sequence({
+            new CPP::Rules::At(function_tmp), function_tmp
+        }),
+        [&] (CPP::Rules::Input in) {
+            XOut << "capture: " << in.string() << std::endl;
+            in.replace("9 x(x) 9");
+            function_stack->push(
+                new CPP::Rules::OneOrMore(
+                    new CPP::Rules::Or({
+                        new CPP::Rules::Sequence({
+                            new CPP::Rules::At(function_tmp), function_tmp
+                        }),
+                        new CPP::Rules::Any()
+                    })
+                ),
+                [&](CPP::Rules::Input in) {
+
+                }
+            );
+        }
+    );
+
+    auto grammar = new CPP::Rules::OneOrMore(
+        new CPP::Rules::Or({
+           function_stack,
+           new CPP::Rules::Any()
+       })
+    );
+
+    EXPECT_TRUE(grammar->match(a));
+
+    XOut << "a: " << a << std::endl;
+
+    delete grammar;
+}
